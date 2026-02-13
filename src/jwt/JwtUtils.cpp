@@ -2,6 +2,54 @@
 #include <sstream>
 #include <algorithm>
 
+#include "../external/json.hpp"
+using json = nlohmann::json;
+
+#include <chrono>
+#include <iostream>
+
+bool ValidateClaims(const std::string& payload, const std::string& expectedIssuer)
+{
+    try
+    {
+        json j = json::parse(payload);
+
+        // Validate issuer
+        if (!j.contains("iss") || j["iss"] != expectedIssuer)
+        {
+            std::cerr << "Issuer validation failed.\n";
+            return false;
+        }
+
+        // Validate expiration
+        if (!j.contains("exp"))
+        {
+            std::cerr << "Expiration claim missing.\n";
+            return false;
+        }
+
+        long long exp = j["exp"];
+
+        auto now = std::chrono::system_clock::now();
+        auto nowSeconds = std::chrono::duration_cast<std::chrono::seconds>(
+            now.time_since_epoch()).count();
+
+        if (exp < nowSeconds)
+        {
+            std::cerr << "Token expired.\n";
+            return false;
+        }
+
+        return true;
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Invalid JSON payload: " << e.what() << "\n";
+        return false;
+    }
+}
+
+
 /*
     Converts Base64URL string to standard Base64 format.
 */

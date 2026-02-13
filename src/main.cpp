@@ -35,6 +35,14 @@ int main(int argc, char* argv[])
     std::string header = Base64Decode(Base64UrlToBase64(parts[0]));
     std::string payload = Base64Decode(Base64UrlToBase64(parts[1]));
 
+    if (!ValidateClaims(payload, "TestIssuer")) 
+    {
+        std::cerr << "JWT claim validation failed.\n";
+		return 1;
+    }
+
+    std::cout << "JWT claims validated passed.\n";
+
     // If structure is valid, print components
     std::cout << "JWT structure valid.\n";
     std::cout << "Decoded Header:\n" << header << "\n\n";
