@@ -2,6 +2,60 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
+#include <cctype>
+
+/*
+    Converts Base64URL string to standard Base64 format.
+*/
+std::string Base64UrlToBase64(std::string input)
+{
+    std::replace(input.begin(), input.end(), '-', '+');
+    std::replace(input.begin(), input.end(), '_', '/');
+
+    // Add padding if missing
+    while (input.size() % 4 != 0)
+    {
+        input += '=';
+    }
+
+    return input;
+}
+
+/*
+    Basic Base64 decoding implementation.
+*/
+std::string Base64Decode(const std::string& input)
+{
+    static const std::string chars =
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz"
+        "0123456789+/";
+
+    std::string output;
+    std::vector<int> T(256, -1);
+
+    for (int i = 0; i < 64; i++)
+        T[chars[i]] = i;
+
+    int val = 0, valb = -8;
+
+    for (unsigned char c : input)
+    {
+        if (T[c] == -1) break;
+
+        val = (val << 6) + T[c];
+        valb += 6;
+
+        if (valb >= 0)
+        {
+            output.push_back(char((val >> valb) & 0xFF));
+            valb -= 8;
+        }
+    }
+
+    return output;
+}
 
 /*
  
@@ -55,10 +109,14 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    // Decode header and payload
+    std::string header = Base64Decode(Base64UrlToBase64(parts[0]));
+    std::string payload = Base64Decode(Base64UrlToBase64(parts[1]));
+
     // If structure is valid, print components
     std::cout << "JWT structure valid.\n";
-    std::cout << "Header: " << parts[0] << "\n";
-    std::cout << "Payload: " << parts[1] << "\n";
+    std::cout << "Decoded Header:\n" << header << "\n\n";
+    std::cout << "Decoded Payload:\n" << payload << "\n";
     std::cout << "Signature: " << parts[2] << "\n";
 
     return 0;
